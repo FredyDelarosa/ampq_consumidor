@@ -4,6 +4,7 @@ import (
 	"log"
 	"notificaciones/src/application"
 	"notificaciones/src/core"
+	"notificaciones/src/infrastructure/services"
 )
 
 type Dependencies struct {
@@ -21,10 +22,12 @@ func NewDependencies() (*Dependencies, error) {
 		log.Fatal("el rabbit no jala", err)
 	}
 
+	rabbitService := services.NewRabbitMQService()
 	mysqlRepo := NewMySQLAlertRepository(db)
-	processAlertUseCase := application.NewProcessAlertUseCase(mysqlRepo)
 
-	go processAlertUseCase.StartListening()
+	processAlertUseCase := application.NewProcessAlertUseCase(mysqlRepo, rabbitService)
+
+	go processAlertUseCase.StartFetchingAlerts()
 
 	return &Dependencies{
 		ProcessAlertUseCase: processAlertUseCase,

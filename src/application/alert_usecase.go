@@ -10,17 +10,20 @@ import (
 )
 
 type ProcessAlertUseCase struct {
-	Repo   repositories.AlertRepository
-	Rabbit *services.RabbitMQService
+	Repo           repositories.AlertRepository
+	Rabbit         *services.RabbitMQService
+	PublishService *services.RabbitMQPublishService
 }
 
-func NewProcessAlertUseCase(repo repositories.AlertRepository, rabbit *services.RabbitMQService) *ProcessAlertUseCase {
-	return &ProcessAlertUseCase{Repo: repo, Rabbit: rabbit}
+func NewProcessAlertUseCase(repo repositories.AlertRepository, rabbit *services.RabbitMQService, publishService *services.RabbitMQPublishService) *ProcessAlertUseCase {
+	return &ProcessAlertUseCase{
+		Repo:           repo,
+		Rabbit:         rabbit,
+		PublishService: publishService,
+	}
 }
 
 func (uc *ProcessAlertUseCase) StartFetchingAlerts() {
-	log.Println("📡 Conectando al consumidor en http://localhost:9090/alerts...")
-
 	for {
 		time.Sleep(5 * time.Second)
 
@@ -43,6 +46,13 @@ func (uc *ProcessAlertUseCase) StartFetchingAlerts() {
 				log.Println("Error guardando alerta en MySQL:", err)
 			} else {
 				log.Println("Alerta guardada:", message)
+			}
+
+			err = uc.PublishService.PublishProcessedAlert(&alert)
+			if err != nil {
+				log.Println("Error publicando alerta procesada:", err)
+			} else {
+				log.Println("Alerta procesada publicada:", message)
 			}
 		}
 	}

@@ -23,9 +23,10 @@ func NewDependencies() (*Dependencies, error) {
 	}
 
 	rabbitService := services.NewRabbitMQService()
+	rabbitPublishService := services.NewRabbitMQPublishService()
 	mysqlRepo := NewMySQLAlertRepository(db)
 
-	processAlertUseCase := application.NewProcessAlertUseCase(mysqlRepo, rabbitService)
+	processAlertUseCase := application.NewProcessAlertUseCase(mysqlRepo, rabbitService, rabbitPublishService)
 
 	go processAlertUseCase.StartFetchingAlerts()
 

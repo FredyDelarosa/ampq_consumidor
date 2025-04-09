@@ -23,12 +23,29 @@ func (s *RabbitMQPublishService) PublishProcessedAlert(alert *entities.Alert) er
 		return nil
 	}
 
+	// Verificar y crear la cola si no existe
+	_, err := core.RabbitChannel.QueueDeclare(
+		"processed_alerts", // nombre de la cola
+		true,               // durable
+		false,              // autoDelete
+		false,              // exclusive
+		false,              // noWait
+		nil,                // arguments
+	)
+	if err != nil {
+		log.Println("error al declarar la cola processed_alerts:", err)
+		return err
+	}
+
 	body, _ := json.Marshal(alert)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err := core.RabbitChannel.PublishWithContext(ctx,
-		"", "processed_alerts", false, false,
+	err = core.RabbitChannel.PublishWithContext(ctx,
+		"",                 // exchange
+		"processed_alerts", // routing key (nombre de la cola)
+		false,              // mandatory
+		false,              // immediate
 		amqp091.Publishing{
 			ContentType: "application/json",
 			Body:        body,

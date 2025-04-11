@@ -6,28 +6,27 @@ import (
 	"notificaciones/src/domain/entities"
 	"notificaciones/src/domain/ports"
 	"notificaciones/src/domain/repositories"
-	"notificaciones/src/infrastructure/services"
 	"time"
 )
 
 type ProcessAlertUseCase struct {
-	Repo           repositories.AlertRepository
-	Rabbit         *services.RabbitMQService
-	PublishService *services.RabbitMQPublishService
-	Notifier       ports.AlertNotifier
+	Repo      repositories.AlertRepository
+	Fetcher   ports.AlertFetcher
+	Publisher ports.AlertPublisher
+	Notifier  ports.AlertNotifier
 }
 
 func NewProcessAlertUseCase(
 	repo repositories.AlertRepository,
-	rabbit *services.RabbitMQService,
-	publishService *services.RabbitMQPublishService,
+	fetcher ports.AlertFetcher,
+	publisher ports.AlertPublisher,
 	notifier ports.AlertNotifier,
 ) *ProcessAlertUseCase {
 	return &ProcessAlertUseCase{
-		Repo:           repo,
-		Rabbit:         rabbit,
-		PublishService: publishService,
-		Notifier:       notifier,
+		Repo:      repo,
+		Fetcher:   fetcher,
+		Publisher: publisher,
+		Notifier:  notifier,
 	}
 }
 
@@ -35,7 +34,7 @@ func (uc *ProcessAlertUseCase) StartFetchingAlerts() {
 	for {
 		time.Sleep(5 * time.Second)
 
-		alerts, err := uc.Rabbit.FetchAlerts()
+		alerts, err := uc.Fetcher.FetchAlerts()
 		if err != nil {
 			continue
 		}
@@ -60,8 +59,7 @@ func (uc *ProcessAlertUseCase) StartFetchingAlerts() {
 				}
 			}
 
-			err = uc.PublishService.PublishProcessedAlert(&alert)
-			if err != nil {
+			if err := uc.Publisher.PublishProcessedAlert(&alert); err != nil {
 				log.Println("Error publicando alerta procesada:", err)
 			} else {
 				log.Println("Alerta procesada publicada:", message)

@@ -11,26 +11,21 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 )
 
-type RabbitMQPublishService struct{}
+type RabbitMQPublisher struct{}
 
-func NewRabbitMQPublishService() *RabbitMQPublishService {
-	return &RabbitMQPublishService{}
+func NewRabbitMQPublisher() *RabbitMQPublisher {
+	return &RabbitMQPublisher{}
 }
 
-func (s *RabbitMQPublishService) PublishProcessedAlert(alert *entities.Alert) error {
+func (s *RabbitMQPublisher) PublishProcessedAlert(alert *entities.Alert) error {
 	if core.RabbitChannel == nil {
 		log.Println("no se conecto a rabbit")
 		return nil
 	}
 
-	// Verificar y crear la cola si no existe
 	_, err := core.RabbitChannel.QueueDeclare(
-		"processed_alerts", // nombre de la cola
-		true,               // durable
-		false,              // autoDelete
-		false,              // exclusive
-		false,              // noWait
-		nil,                // arguments
+		"processed_alerts",
+		true, false, false, false, nil,
 	)
 	if err != nil {
 		log.Println("error al declarar la cola processed_alerts:", err)
@@ -42,10 +37,7 @@ func (s *RabbitMQPublishService) PublishProcessedAlert(alert *entities.Alert) er
 	defer cancel()
 
 	err = core.RabbitChannel.PublishWithContext(ctx,
-		"",                 // exchange
-		"processed_alerts", // routing key (nombre de la cola)
-		false,              // mandatory
-		false,              // immediate
+		"", "processed_alerts", false, false,
 		amqp091.Publishing{
 			ContentType: "application/json",
 			Body:        body,

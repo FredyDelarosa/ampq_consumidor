@@ -7,13 +7,13 @@ import (
 	"net/http"
 )
 
-type RabbitMQService struct{}
+type RabbitMQFetcher struct{}
 
-func NewRabbitMQService() *RabbitMQService {
-	return &RabbitMQService{}
+func NewRabbitMQFetcher() *RabbitMQFetcher {
+	return &RabbitMQFetcher{}
 }
 
-func (s *RabbitMQService) FetchAlerts() ([]map[string]interface{}, error) {
+func (s *RabbitMQFetcher) FetchAlerts() ([]map[string]interface{}, error) {
 	resp, err := http.Get("http://localhost:9090/alerts")
 	if err != nil {
 		log.Println("Error obteniendo alertas del consumidor:", err)

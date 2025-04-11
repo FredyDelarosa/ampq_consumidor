@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"notificaciones/src/application"
 	"notificaciones/src/infrastructure/controllers"
+	"notificaciones/src/infrastructure/websocket"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -22,4 +23,7 @@ func RegisterRoutes(router *gin.Engine, processAlertUseCase *application.Process
 	alertController := controllers.NewAlertController(processAlertUseCase.Repo)
 
 	router.GET("/alerts", alertController.GetAllAlerts)
+	router.GET("/ws", func(c *gin.Context) {
+		websocket.HandleWebSocket(c.Writer, c.Request)
+	})
 }

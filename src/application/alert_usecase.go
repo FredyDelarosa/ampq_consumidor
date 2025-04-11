@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"notificaciones/src/domain/entities"
+	"notificaciones/src/domain/ports"
 	"notificaciones/src/domain/repositories"
 	"notificaciones/src/infrastructure/services"
 	"time"
@@ -13,13 +14,20 @@ type ProcessAlertUseCase struct {
 	Repo           repositories.AlertRepository
 	Rabbit         *services.RabbitMQService
 	PublishService *services.RabbitMQPublishService
+	Notifier       ports.AlertNotifier
 }
 
-func NewProcessAlertUseCase(repo repositories.AlertRepository, rabbit *services.RabbitMQService, publishService *services.RabbitMQPublishService) *ProcessAlertUseCase {
+func NewProcessAlertUseCase(
+	repo repositories.AlertRepository,
+	rabbit *services.RabbitMQService,
+	publishService *services.RabbitMQPublishService,
+	notifier ports.AlertNotifier,
+) *ProcessAlertUseCase {
 	return &ProcessAlertUseCase{
 		Repo:           repo,
 		Rabbit:         rabbit,
 		PublishService: publishService,
+		Notifier:       notifier,
 	}
 }
 
@@ -46,6 +54,10 @@ func (uc *ProcessAlertUseCase) StartFetchingAlerts() {
 				log.Println("Error guardando alerta en MySQL:", err)
 			} else {
 				log.Println("Alerta guardada:", message)
+
+				if err := uc.Notifier.Notify(&alert); err != nil {
+					log.Println("Error enviando por WebSocket:", err)
+				}
 			}
 
 			err = uc.PublishService.PublishProcessedAlert(&alert)
